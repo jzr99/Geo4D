@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="MultiPly: Reconstruction of Multiple People from Monocular Video in the Wild">
+  <meta name="keywords" content="Vid2Avatar">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MultiPly: Reconstruction of Multiple People from Monocular Video in the Wild</title>
+
+
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./resources/Geo4D_ICON.png">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+<!-- Begin new styles from demos page -->
+<style>
+    /* body {
+      padding: 2em;
+      font-family: sans-serif;
+    } */
+
+    iframe {
+      border-radius: 8px;
+      width: 49%;
+      height: 100%;
+      border: none;
+      box-shadow: 0 0 0px 0em rgba(0, 0, 0, 0.15);
+    }
+
+    /* @media (max-width: 768px) {
+      iframe {
+        width: 100%;
+        height: 80em;
+      }
+    } */
+
+    a,
+    a:link {
+      color: #777;
+    }
+
+    /* Styles for the instruction icons and text */
+    .instructions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.2em;
+      text-align: center;
+      padding: 0.6em;
+    }
+
+    .instruction-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      font-size: 1.2em;
+    }
+
+    .instruction-item img {
+      width: 36px;
+      height: 36px;
+    }
+
+    .instructions_small {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1em;
+      text-align: center;
+      padding: 0.5em;
+    }
+
+    .instruction-item_small {
+      display: flex;
+      align-items: center;
+      gap: 0.3em;
+      font-size: 1.0em;
+    }
+
+    .instruction-item_small img {
+      width: 30px;
+      height: 30px;
+    }
+
+  </style>
+  <!-- End new styles -->
+
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js">
+</script>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+            <img src="./resources/geo4d_title.png" alt="Geo4D Icon" style="width: 256px; vertical-align: middle;">
+          <h1 class="title is-1 publication-title">
+            Geo4D: Leveraging Video Generators for Geometric 4D Scene Reconstruction
+          </h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://jzr99.github.io">Zeren Jiang</a><sup>1</sup>,</span>
+              <span class="author-block">
+              <a href="https://chuanxiaz.com/">Chuanxia Zheng</a><sup>1</sup>,</span>
+              <span class="author-block">
+              <a href="https://eng.ox.ac.uk/people/iro-laina/">Iro Laina</a><sup>1</sup>,</span>
+              <span class="author-block">
+              <a href="https://dlarlus.github.io/">Diane Larlus</a><sup>2</sup>,</span>
+              <span class="author-block">
+              <a href="https://www.robots.ox.ac.uk/~vedaldi/">Andrea Vedaldi</a><sup>1</sup>,</span>
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>1</sup>Visual Geometry Group, University of Oxford,</span>
+            <span class="author-block"><sup>2</sup>Naver Labs Europe
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">ArXiv 2025</span>
+            </span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href=""
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper (coming soon)</span>
+                </a>
+              </span>
+              <!-- <span class="link-block">
+                <a href="./resource/CVPR2024_MultiPly_Supp_Doc.pdf"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-file-archive"></i>
+                  </span>
+                  <span>SuppMat</span>
+                </a>
+              </span> -->
+              <!-- Video Link. -->
+              <!-- <span class="link-block">
+                <a href=""
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-youtube"></i>
+                  </span>
+                  <span>Video</span>
+                </a>
+              </span> -->
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/jzr99/Geo4D"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code (coming soon)</span>
+                  </a>
+              </span>
+               <!-- Dataset Link. -->
+              <!-- <span class="link-block">
+                <a href=""
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="far fa-images"></i>
+                  </span>
+                  <span>Data (coming soon)</span>
+                  </a>
+              </span> -->
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+        <img src="./resources/teaser_v3.png"  class="center"/>
+      <h2 class="subtitle has-text-centered">
+        Geo4D repurposes a video diffusion model for monocular 4D reconstruction.
+      </h2>
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            We introduce Geo4D, a method to repurpose video diffusion models for monocular 3D reconstruction of dynamic scenes. By leveraging the strong dynamic prior captured by such video models, Geo4D can be trained using only synthetic data while generalizing well to real data in a zero-shot manner. Geo4D predicts several complementary geometric modalities, namely point, depth, and ray maps. It uses a new multi-modal alignment algorithm to align and fuse these modalities, as well as multiple sliding windows, at inference time, thus obtaining robust and accurate 4D reconstruction of long videos. Extensive experiments across multiple benchmarks show that Geo4D significantly surpasses state-of-the-art video depth estimation methods, including recent methods such as MonST3R, which are also designed to handle dynamic scenes.
+        </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+
+    <!-- Paper video. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Video</h2>
+        <div class="publication-video">
+          <!-- <video controls height="100%">
+            <source src="./resource/CVPR2024_MultiPly_Supp_Video.mp4"
+                    type="video/mp4">
+          </video> -->
+          <iframe width="560" height="315" src="https://www.youtube.com/embed/HHQG26mZicE" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+    <!--/ Paper video. -->
+  </div>
+</section>
+
+
+<section class="section" id="method">
+  <div class="container is-max-desktop content">
+    <h2 class="title">Method</h2>
+    <img src="./resources/geo4d_method_v2.png"  height="250" class="center"/>
+    <p>
+        <b>Overview of Geo4D.</b> During training, video conditions are injected by locally concatenating the latent feature of the video with diffused geometric features 
+        \( \mathbf{z}_t^{\mathbf{X}}, \mathbf{z}_t^{\mathbf{D}}, \mathbf{z}_t^{\mathbf{r}} \) 
+        and are injected globally via cross-attention in the denoising U-Net, after CLIP encoding and a query transformer. 
+        During inference, iteratively denoised latent features 
+        \( \hat{\mathbf{z}}_0^{\mathbf{X}}, \hat{\mathbf{z}}_0^{\mathbf{D}}, \hat{\mathbf{z}}_0^{\mathbf{r}} \) 
+        are decoded by the fine-tuned VAE decoder, followed by multi-modal alignment optimization for coherent 4D reconstruction.
+    </p>
+
+
+  </div>
+</section>
+
+<section class="section" id="result">
+  <div class="container is-max-desktop content">
+    <!-- <h2 class="title">Result</h2>
+
+    <h3 class="title">Comparison</h3>
+    <p>
+      Our method generates complete human shapes with sharp boundaries and spatially coherent 3D reconstructions and outperforms existing state-of-the-art methods.
+    </p>
+
+     <div class="columns is-centered is-gapless">
+      <div class="column">
+        <div class="content">
+          <h4 class="title">Hi4D Dataset</h4>
+          <video autoplay controls muted loop height="100%">
+            <source src="./resource/compare_1.mp4"
+                    type="video/mp4">
+          </video>
+        </div>
+      </div>
+
+      <div class="column">
+        <h4 class="title">MMM Dataset</h4>
+        <div class="columns is-centered">
+          <div class="column content">
+          <video autoplay controls muted loop height="100%">
+            <source src="./resource/compare_2.mp4"
+                    type="video/mp4">
+          </video>
+          </div>
+        </div>
+      </div>
+
+      <div class="column">
+        <h4 class="title">In-the-wild Videos</h4>
+        <div class="columns is-centered">
+          <div class="column content">
+          <video autoplay controls muted loop height="100%">
+            <source src="./resource/compare_3.mp4"
+                    type="video/mp4">
+          </video>
+          </div>
+        </div>
+      </div>
+    </div> -->
+
+    <h2 class="title">Result</h2>
+    <h3 class="title">Interactive 4D Visualization</h3> 
+    <div class="content">
+        <!-- Instructions with icons -->
+    <div class="instructions_small" style="margin-top: -1em;">
+      <div class="instruction-item_small" style="display: flex; align-items: center;">
+        <img src="icons/left-click.png" alt="Left Click" style="margin-right: 0px;">
+        <span>Drag with <em>left</em> click to <strong>rotate</strong> view</span>
+      </div>
+  
+      <div class="instruction-item_small" style="display: flex; align-items: center; margin-top: 10px;">
+        <img src="icons/scroll-wheel.png" alt="Scroll Wheel" style="margin-right: -5px;">
+        <span>Scroll to <strong>zoom</strong> in/out</span>
+      </div>
+  
+      <div class="instruction-item_small" style="display: flex; align-items: center; margin-top: 10px;">
+        <img src="icons/right-click.png" alt="Right Click" style="margin-right: 0px;">
+        <span>Drag with <em>right</em> click to <strong>move</strong> view</span>
+      </div>
+    </div>
+  
+    <div class="instructions_small">
+      <div class="instruction-item_small" style="display: flex; align-items: center; margin-top: -15px;">
+        <img src="icons/letter-w.png" alt="W" style="margin-right: -10px;">
+        <img src="icons/letter-s.png" alt="S" style="margin-right: 0px;">
+        <span>Moving forward and backward</span>
+      </div>
+  
+      <div class="instruction-item_small" style="display: flex; align-items: center; margin-top: -15px;">
+        <img src="icons/letter-a.png" alt="A" style="margin-right: -10px;">
+        <img src="icons/letter-d.png" alt="D" style="margin-right: 0px;">
+        <span>Moving left and right</span>
+      </div>
+  
+      <div class="instruction-item_small" style="display: flex; align-items: center; margin-top: -15px;">
+        <img src="icons/letter-q.png" alt="Q" style="margin-right: -10px;">
+        <img src="icons/letter-e.png" alt="E" style="margin-right: 0px;">
+        <span>Moving upward and downward</span>
+      </div>
+    </div>
+    <!-- Downsampling note -->
+  <p style="text-align: center; font-size: 1em; padding: 0em; color: #555;">
+    Note: Results are downsampled <strong>4 times</strong> for efficient online rendering. Also, we do not mask out any points for fair comparison.
+  </p>
+  </div>
+    <h3 class="title">Comparison</h3>
+    <p>
+        Attribute to our group-wise inference manner and prior geometry knowledge from pretrained video diffusion model, our model successfully produces consistent 4D geometry under fast motion (example 1&2) and deceptive reflection (example 3). 
+    </p>
+
+    
+  <section class="hero is-light is-small" style="background-color: white;">
+    <div class="hero-body">
+      <div class="container">
+        <div id="results-carousel" class="carousel results-carousel" data-slides-to-show="1">
+          <div class="item item-steve">
+            <!-- Wrapper for iframes -->
+            <div id="wrapper" style="
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 2em;
+            height: 30vh;
+            ">
+                <!-- Insert two iframes -->
+                 
+                <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_drift-turn-4m.viser&initDistanceScale=0.2&initHeightOffset=0.0"></iframe>
+                <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_drift-turn-4.viser&initDistanceScale=0.2&initHeightOffset=0.0"></iframe>
+            </div>
+            
+          </div>
+          <div class="item item-chair-tp">
+            <!-- <video poster="" controls muted loop height="100%">
+              <source src="./resource/compare_2.mp4" type="video/mp4">
+            </video> -->
+            <div id="wrapper" style="
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 2em;
+            height: 30vh;
+            ">
+                <!-- Insert two iframes -->
+                <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_drift-straight-4m.viser&initDistanceScale=0.4&initHeightOffset=0.0"></iframe>
+                <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_drift-straight-4.viser&initDistanceScale=0.4&initHeightOffset=0.0"></iframe>
+            </div>
+          </div>
+          <div class="item item-chair-tp">
+            <!-- <video poster="" controls muted loop height="100%">
+              <source src="./resource/compare_3.mp4" type="video/mp4">
+            </video> -->
+            <div id="wrapper" style="
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 2em;
+            height: 30vh;
+            ">
+                <!-- Insert two iframes -->
+                <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_flamingo-4m.viser&initDistanceScale=0.4&initHeightOffset=0.0"></iframe>
+                <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_flamingo-4.viser&initDistanceScale=0.4&initHeightOffset=0.0"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Labels for the iframes -->
+    <div style="display: flex; justify-content: center; gap: 0em; text-align: center; margin-top: 0px;">
+        <div style="width: 50%;">MonST3R</div>
+        <div style="width: 50%;">Ours</div>
+    </div>
+    </div>
+  </section>
+
+    <h3 class="title">More Qualitative Results</h3>
+    <p>
+      Our method generalizes to various scenes with different 4D objects and performs robustly against different camera and object motion.
+    </p>
+
+  <section class="hero is-light is-small" style="background-color: white;">
+    <div class="hero-body">
+      <div class="container">
+        <div id="results-carousel" class="carousel results-carousel" data-slides-to-show="2">
+          <div class="item item-steve">
+            <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_person_tracking2_good.viser&initDistanceScale=0.4&initHeightOffset=0.0", style="height: 30vh; width: 100%;"></iframe>
+          </div>
+          <div class="item item-chair-tp">
+            <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_snowboard.viser&initDistanceScale=0.4&initHeightOffset=0.0", style="height: 30vh; width: 100%;"></iframe>
+          </div>
+          <div class="item item-chair-tp">
+            <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_hike.viser&initDistanceScale=0.4&initHeightOffset=0.0", style="height: 30vh; width: 100%;"></iframe>
+          </div>
+          <div class="item item-chair-tp">
+            <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_balloon2_good.viser&initDistanceScale=0.4&initHeightOffset=0.0", style="height: 30vh; width: 100%;"></iframe>
+          </div>
+          <div class="item item-chair-tp">
+            <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_dog.viser&initDistanceScale=0.4&initHeightOffset=0.0", style="height: 30vh; width: 100%;"></iframe>
+          </div>
+          <div class="item item-chair-tp">
+            <iframe
+                src="http://localhost:8000/build/index.html?playbackPath=http://localhost:8000/viser/recording_kitti_1_good.viser&initDistanceScale=0.4&initHeightOffset=0.0", style="height: 30vh; width: 100%;"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  </div>
+</section>
+
+
+<section class="section" id="Acknowledgment">
+  <div class="container is-max-desktop content">
+    <h2 class="title">Acknowledgment</h2>
+    <p>
+      Zeren Jiang was supported by Clarendon Scholarship. This work were also supported by ERC s-UNION and EPSRC EP/Z001811/1 SYN3D. 
+    </p>
+    <p>
+        We thank Junyi Zhang for discussing the experiments of MonST3R with us.
+    </p>
+    <p>
+        We also thank Stanislaw Szymanowicz, Ruining Li, Runjia Li, Minghao Chen, Jinghao Zhou, Gabrijel Boduljak and Xingyi Yang for helpful suggestions and discussions.
+    </p>
+
+  </div>
+</section>
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@misc{Geo4D,
+      title={Geo4D: Leveraging Video Generators for Geometric 4D Scene Reconstruction}, 
+      author={Jiang, Zeren and Zheng, Chuanxia and Laina, Iro and Larlus, Diane and Vedaldi, Andrea},
+      year={2025},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+  }</code></pre>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <!-- <div class="container">
+    <div class="content has-text-centered">
+      <a class="icon-link"
+         href="http://files.ait.ethz.ch/projects/vid2avatar/main.pdf">
+        <i class="fas fa-file-pdf"></i>
+      </a>
+      <a class="icon-link" href="https://github.com/MoyGcc/vid2avatar" class="external-link" disabled>
+        <i class="fab fa-github"></i>
+      </a>
+    </div> -->
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website is licensed under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+          <p>
+            This webpage is built with the template from <a href="https://github.com/nerfies/nerfies.github.io">NeRFies</a> and <a href="https://monst3r-project.github.io/">MonST3R</a>. We sincerely thank all the contributors for those open-source templates.
+          </p>
+          <p>
+            The interactive 4D visualization is powered by <a href="https://github.com/nerfstudio-project/viser">Viser</a>. We sincerely thank all contributors for the Viser project.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
