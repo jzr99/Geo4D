@@ -41,13 +41,6 @@ bash scripts/eval.sh [sintel|bonn|kitti|tum|davis] gpu_id
 # e.g. bash scripts/eval.sh sintel 0
 ```
 
-Then, to run the evaluation script for vae with ground truth point map:
-```bash 
-bash scripts/eval_vae.sh [sintel|bonn|kitti|tum|davis] gpu_id 
-# e.g. bash scripts/eval_vae.sh sintel 0
-```
-
-
 ## Visualization
 
 You could then use the `viser` to visualize the results:
@@ -56,7 +49,7 @@ python viser/visualizer.py --data path/to/results/folder --no_mask
 ```
 
 <p align="center">
-  <img src="assets/image35.gif" /> 
+  <img src="assets/image35.gif" width="720"  /> 
 </p>
 
 <p align="center">
