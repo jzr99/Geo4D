@@ -11,8 +11,7 @@ from copy import deepcopy
 from scipy.optimize import minimize
 import os
 from collections import defaultdict
-import dust3r.eval_metadata
-from dust3r.eval_metadata import dataset_metadata
+from dust3r.eval_metadata_geo4d import dataset_metadata
 
 def eval_mono_depth_estimation(args, model, device):
     metadata = dataset_metadata.get(args.eval_dataset)

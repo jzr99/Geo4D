@@ -5,17 +5,15 @@ import torch.nn.functional as F
 from tqdm import tqdm
 import contextlib
 
-from dust3r.cloud_opt.base_opt_group import LightBaseGroupPCOptimizer, edge_str
-from dust3r.cloud_opt.pair_viewer import PairViewer
+from dust3r.cloud_opt.base_opt_group import LightBaseGroupPCOptimizer
 from dust3r.utils.geometry import xy_grid, geotrf, depthmap_to_pts3d
 from dust3r.utils.device import to_cpu, to_numpy
 from dust3r.utils.goem_opt import DepthBasedWarping, OccMask, WarpImage, depth_regularization_si_weighted, tum_to_pose_matrix
-from lvdm.data.base_stereo_view_dataset import pixel_grid, plucker_embedding_ray_dir
 from dust3r.depth_eval import depth_evaluation
 import cv2
 import os
 
-from dust3r.cloud_opt.base_opt_light_multiply import get_tum_poses
+from dust3r.cloud_opt.base_opt_group import get_tum_poses
 from dust3r.utils.vo_eval import align_trajectory_with_eval
 
 def smooth_L1_loss_fn(estimate, gt, mask, beta=1.0, per_pixel_thre=50.):
@@ -414,33 +412,6 @@ class LightPointCloudGroupOptimizer(LightBaseGroupPCOptimizer):
         rel_ptmaps = _fast_depthmap_to_pts3d(depth, self._grid, focals, pp=pp)
         # project to world frame
         return geotrf(im_poses, rel_ptmaps)
-    
-    def im_pose_to_raymap(self):
-        # intrinsics = self.get_intrinsics() # [N, 3, 3]
-        intrinsics = self.get_intrinsics_dev(dev=8)
-        # not sure if the intrinsics still can be back propogated
-        c2w = self.get_im_poses() # [N, 4, 4]
-        rel_c2w_group = []
-        for group in self.groups:
-            rel_c2w_group_i = []
-            ref_idx = group[0]
-            for idx in group:
-                c2w_ref = torch.inverse(c2w[ref_idx]) @ c2w[idx]
-                H, W = self.imshapes[idx]
-                H = H // 8
-                W = W // 8
-
-
-                uv = pixel_grid(H, W)
-                uv = torch.from_numpy(uv).reshape(-1,2).unsqueeze(0).to(c2w_ref.device)
-                # import pdb;pdb.set_trace()
-                plucker = plucker_embedding_ray_dir(c2w_ref.unsqueeze(0), uv, intrinsics[[idx]]) # # [1, 6, H, W]
-                plucker = plucker.reshape(H, W, 3).permute(2, 0, 1).unsqueeze(0) # [1, 6, 32, 32]
-                rel_c2w_group_i.append(plucker)
-            rel_c2w_group_i = torch.cat(rel_c2w_group_i, dim=0) # [G, 6, H, W]
-            rel_c2w_group.append(rel_c2w_group_i)
-        rel_c2w_group = torch.cat(rel_c2w_group, dim=0) # [G_num * G, 6, H, W]
-        return rel_c2w_group.permute(0, 2, 3, 1) # [N, H, W, 6]
 
         
 
@@ -490,16 +461,6 @@ class LightPointCloudGroupOptimizer(LightBaseGroupPCOptimizer):
         ray_loss = 0
         depth_loss = 0
         loss_traj = 0
-        if self.opt_raydir:
-            opt_raydir = self.im_pose_to_raymap()
-            pred_raydir = self._stacked_raydir_all.reshape(-1,self.imshape[0], self.imshape[1], 3)
-            # interpolate to H //8, W // 8
-            pred_raydir = F.interpolate(pred_raydir.permute(0, 3, 1, 2), size=(self.imshape[0]//8, self.imshape[1]//8), mode='bilinear', align_corners=False).permute(0, 2, 3, 1)
-            import pdb;pdb.set_trace()
-            # TODO check the shape of weight, it is weird
-            ray_loss = self.dist(opt_raydir, pred_raydir, weight=torch.ones_like(opt_raydir)[..., 0]).sum() / self.total_area_all
-            ray_loss = ray_loss * 20
-            # print('ray loss:', ray_loss.item())
         
         if self.inverse_depthmap_dict is not None and epoch >= self.depth_traj_start_iter:
             # invalid_depth_group = []
