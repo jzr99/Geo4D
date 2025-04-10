@@ -67,7 +67,7 @@ Here are more recent 3D/4D reconstruction projects from our team:
 * [VGGT: Visual Geometry Grounded Transformer](https://vgg-t.github.io/)
 
 ## BibTeX
-If you find Splatt3R useful for your research and applications, please cite us using this BibTex:
+If you find Geo4D useful for your research and applications, please cite us using this BibTex:
 ```
 @misc{Geo4D,
       title={Geo4D: Leveraging Video Generators for Geometric 4D Scene Reconstruction}, 
