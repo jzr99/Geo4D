@@ -37,7 +37,7 @@ Please first refer to the [evaluation_script.md](data/evaluation_script.md) to d
 
 Then, run the evaluation script:
 ```bash 
-bash scripts/eval.sh [sintel|bonn|kitti|tum|davis] gpu_id 
+bash scripts/eval_geo4d.sh [sintel|bonn|kitti|tum|davis] gpu_id 
 # e.g. bash scripts/eval.sh sintel 0
 ```
 
