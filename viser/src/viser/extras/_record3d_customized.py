@@ -54,7 +54,7 @@ class Record3dLoader_Customized:
         self.no_mask = no_mask
 
         # Read frames.
-        self.rgb_paths = sorted(data_dir.glob("frame_*.png"), key=lambda p: int(p.stem.split("_")[-1]))
+        self.rgb_paths = sorted(data_dir.glob("frame_0*.png"), key=lambda p: int(p.stem.split("_")[-1]))
         self.depth_paths = sorted(data_dir.glob("frame_*.npy"), key=lambda p: int(p.stem.split("_")[-1]))
         if init_conf:
             self.init_conf_paths = sorted(data_dir.glob("init_conf_*.npy"), key=lambda p: int(p.stem.split("_")[-1]))

@@ -445,20 +445,20 @@ class LightBaseGroupPCOptimizer (nn.Module):
         depth_maps = depth_maps.reshape(-1, H, W)
         depth_maps = 1 / (depth_maps + 1e-6) 
         images = []
-        images_grey = []
+        # images_grey = []
 
         colored_depth_map = vis_sequence_depth(depth_maps.detach().cpu().numpy())
-        greys_depth_map = vis_sequence_depth(depth_maps.detach().cpu().numpy(), colormap='Greys')
+        # greys_depth_map = vis_sequence_depth(depth_maps.detach().cpu().numpy(), colormap='Greys')
         for i, depth_map in enumerate(colored_depth_map):
-            img_path_gray = f'{path}/frame_graydepth_{(i):04d}.png'
+            # img_path_gray = f'{path}/frame_graydepth_{(i):04d}.png'
             img_path = f'{path}/frame_colordepth_{(i):04d}.png'
-            cv2.imwrite(img_path_gray, (greys_depth_map[i] * 255).astype(np.uint8))
+            # cv2.imwrite(img_path_gray, (greys_depth_map[i] * 255).astype(np.uint8))
             cv2.imwrite(img_path, cv2.cvtColor((depth_map * 255).astype(np.uint8), cv2.COLOR_RGB2BGR))
             images.append(Image.open(img_path))
-            images_grey.append(Image.open(img_path_gray))
+            # images_grey.append(Image.open(img_path_gray))
         
         images[0].save(f'{path}/colored_depth_maps.gif', save_all=True, append_images=images[1:], duration=100, loop=0)
-        images_grey[0].save(f'{path}/grey_depth_maps.gif', save_all=True, append_images=images_grey[1:], duration=100, loop=0)
+        # images_grey[0].save(f'{path}/grey_depth_maps.gif', save_all=True, append_images=images_grey[1:], duration=100, loop=0)
 
         
         return depth_maps

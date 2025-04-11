@@ -4,13 +4,14 @@ from omegaconf import OmegaConf
 from tqdm import tqdm
 from einops import rearrange, repeat
 from collections import OrderedDict
+sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
+from utils.funcs import load_video_batch
 
 import torch
 import torchvision
 import torchvision.transforms as transforms
 from pytorch_lightning import seed_everything
 from PIL import Image
-sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
 from lvdm.models.samplers.ddim import DDIMSampler
 from lvdm.models.samplers.ddim_multiplecond import DDIMSampler as DDIMSampler_multicond
 from utils.utils import instantiate_from_config
@@ -310,8 +311,7 @@ def decode_pm_confhead(z, model, pointmap_vae):
         results = rearrange(results, '(b t) c h w -> b c t h w', b=b,t=t)
     return results
 
-
-def run_evaluation(args, gpu_num, gpu_no):
+def run_inference(args, gpu_num, gpu_no):
     ## model config
     config = OmegaConf.load(args.config)
     model_config = config.pop("model", OmegaConf.create())
@@ -351,18 +351,19 @@ def run_evaluation(args, gpu_num, gpu_no):
         orivae = False
 
     model.eval()
-    assert (args.height % 16 == 0) and (args.width % 16 == 0), "Error: image size [h,w] should be multiples of 16!"
+    assert (args.width, args.height) in [(512, 384), (512, 320), (576, 256), (640, 192)], "Current implementation only support [input size = [(512, 384), (512, 320), (576, 256), (640, 192)]]"
+    assert (args.height % 64 == 0) and (args.width % 64 == 0), "Error: image size [h,w] should be multiples of 64!"
     assert args.bs == 1, "Current implementation only support [batch size = 1]!"
 
 
     # load dataset from config
-    config.data.params.test.params.dataset = args.dataset
-    config.data.params.test.params.full_seq = args.full_seq
-    dataset = instantiate_from_config(config.data)
-    dataset.setup()
-    dataloader = dataset._test_dataloader()
+    # config.data.params.test.params.dataset = args.dataset
+    # config.data.params.test.params.full_seq = args.full_seq
+    # dataset = instantiate_from_config(config.data)
+    # dataset.setup()
+    # dataloader = dataset._test_dataloader()
 
-    dataset_name = args.dataset
+    # dataset_name = args.dataset
 
     use_raymap = False
     use_crossmap = False
@@ -370,43 +371,47 @@ def run_evaluation(args, gpu_num, gpu_no):
     use_traj = True
     config.postprocess.use_gt_focal=False
 
-    vaedir = os.path.join(args.savedir, f'{dataset_name}' + f"raydir_cross_depth_seq_stride{args.stride}_cameraopt_rot1.0_depth2_ddimstep{args.ddim_steps}_ddimeta{args.ddim_eta}_fastlr001_temp{config.postprocess.temporal_smoothing_weight}_cfg{args.unconditional_guidance_scale}_same_time_orivae{orivae}_robustfocal_gtfocal{config.postprocess.use_gt_focal}_clean")
+    seq_name = args.video_path.split('/')[-1].split('.')[0]
+
+    vaedir = os.path.join(args.savedir, f'{seq_name}_fps24_cfg{args.unconditional_guidance_scale}_ddimstep{args.ddim_steps}_ddimeta{args.ddim_eta}')
 
     os.makedirs(vaedir, exist_ok=True)
     save_dir = vaedir
 
-    ate_list = []
-    rpe_trans_list = []
-    rpe_rot_list = []
-    outfile_list = []
-    gathered_depth_metrics = []
+    video_frames, fps_list = load_video_batch([args.video_path], frame_stride=args.frame_sampling_stride, video_size=(args.height, args.width), video_frames=args.max_video_frames)
+    # import pdb;pdb.set_trace()
+    B,C,T,H,W = video_frames.shape
+
+    views = []
+    for i in range(T):
+        view = {
+            'img': video_frames[0,:,i,:,:],
+            'idx': (i,),
+        }
+        views.append(view)
+
     time_list = []
     time_for_each = 0
     total_frames = 0
-    for idx, batch in tqdm(enumerate(dataloader), desc='Sample Batch'):
+    for idx, batch in enumerate(video_frames):
+        fps = fps_list[idx]
         time_for_each = 0
-        if args.dataset == 'scannet' and batch.get('gt_traj', None) is None:
-            continue
-        video = batch['video']
-        b,t,c,h,w = video.shape
+        video = batch
+        video = video.unsqueeze(0) # b c t h w
+        B,C,T,H,W = video.shape
         channels = model.model.diffusion_model.out_channels
         n_frames = args.video_length
-        print(f'Inference with {n_frames} frames')
-        noise_shape = [args.bs, channels, n_frames, h // 8, w // 8]
-        seq = batch['seq'][0]
-        filenames = seq
+        # print(f'Inference with {n_frames} frames')
+        noise_shape = [args.bs, channels, n_frames, H // 8, W // 8]
+        seq = seq_name
+        filenames = seq_name
         
 
-        prompts = batch['caption']
-        videos_all = get_input(batch, 'video').to("cuda") # b c t h w
+        prompts = ['Output a video that assigns each 3D location in the world a consistent color.']
+        videos_all = video.to("cuda") # b c t h w
 
         B,C,T,H,W = videos_all.shape
         intrinsics = None
-        if config.postprocess.use_gt_focal and args.dataset == 'sintel':
-            intrinsics = batch['intrinsics']
-            intrinsics = intrinsics * (H / 436) # TODO here we resize the original image
-            intrinsics = intrinsics[0]
-            # import pdb;pdb.set_trace()
         total_frames = total_frames + T
 
         slice_list = []
@@ -427,16 +432,15 @@ def run_evaluation(args, gpu_num, gpu_no):
             videos = videos_all[:,:,sl,:,:].clone()
             # print(f'Inference with {sl.start} to {sl.stop} frames with step {sl.step}, with total {T} frames')
             
-            view_list.append(batch['view'][sl])
+            view_list.append(views[sl])
             
             raymap = None
             crossmap = None
             inverse_depthmap = None
             traj = None
             # batch, variants, c, t, h, w
-            time_start = time.time()
             batch_samples = image_guided_synthesis(model, prompts, videos, noise_shape, args.n_samples, args.ddim_steps, args.ddim_eta, \
-                                args.unconditional_guidance_scale, args.cfg_img, 24 // sl.step, True, args.multiple_cond_cfg, args.loop, args.interp, args.timestep_spacing, args.guidance_rescale, pointmap_vae=pointmap_vae)
+                                args.unconditional_guidance_scale, args.cfg_img, 24, True, args.multiple_cond_cfg, args.loop, args.interp, args.timestep_spacing, args.guidance_rescale, pointmap_vae=pointmap_vae)
 
             assert batch_samples.shape[1] == 1, "only support variants size = 1"
             batch_samples = batch_samples[:,0]
@@ -459,8 +463,7 @@ def run_evaluation(args, gpu_num, gpu_no):
             else:
                 raymap = None
             batch_samples = batch_samples[:, :4] # only keep point map
-            time_end = time.time()
-            time_for_each = time_for_each + (time_end - time_start)
+
             
             x_recon = rearrange(batch_samples, 'b c t h w -> (b t) c h w')
             confidence = x_recon[:,[-1],:,:]
@@ -500,57 +503,15 @@ def run_evaluation(args, gpu_num, gpu_no):
             pred_list.append(pred_pts)
         
         
-        time_start = time.time()
 
 
         scene = post_optimization(view_list, pred_list, config.postprocess, conf_optimize=True, init_method='group', lr=0.03, opt_raydir=True if use_raymap else False, intrinsics=intrinsics)
-        time_end = time.time()
-        time_for_each = time_for_each + (time_end - time_start)
-        print(f'Diffusion + Optimization time: {time_for_each:.2f}s')
-        time_list.append(time_for_each)
-        time_for_each = 0
+
 
 
         depthmap = scene.get_depthmaps()
         depthmap = torch.stack(depthmap, dim=0)
         T, H, W = depthmap.shape
-
-
-        if batch.get('depth', None) is not None:
-            pr_depth = batch['depth'].to(model.device)
-
-            _, T, OH, OW = batch['depth'].shape
-            resize_func = torchvision.transforms.Resize((OH, OW), interpolation=torchvision.transforms.InterpolationMode.BICUBIC)
-            depthmap = resize_func(depthmap)
-            depthmap = depthmap.detach() # [t, h, w]
-            depthmap = depthmap.reshape(-1)
-
-            pr_depth = pr_depth.reshape(-1)
-
-            pr_depth = pr_depth.float().to(model.device)
-            depthmap = depthmap.float().to(model.device)
-
-            # [T, H, W, 1]
-            pnt_valid_mask = resize_func(pnt_valid_mask.squeeze(-1).float()) > 0.8
-            # the align_mask is only used to mask out during GT & predicted alignment, we calculate the error based on all valid ground truth point.
-            custom_mask = pnt_valid_mask.reshape(-1)
-            if args.dataset == 'kitti':
-                depth_results, error_map, depth_predict, depth_gt = depth_evaluation(depthmap, pr_depth, max_depth=None, align_with_lad2=True, use_gpu=True)
-            else:
-                depth_results, error_map, depth_predict, depth_gt = depth_evaluation(depthmap, pr_depth, max_depth=70, align_with_lad2=True, use_gpu=True, post_clip_max=70, lr=1e-2, max_iters=5000, align_mask=custom_mask)
-            error_map = error_map.reshape(T, OH, OW)
-            os.makedirs(f'{save_dir}/{seq}', exist_ok=True)
-            for i in range(T):
-                cv2.imwrite(os.path.join(f'{save_dir}/{seq}', f'{filenames}_error_{i}.png'), np.clip((error_map[i].detach().cpu().numpy() * 255),0,255).astype(np.uint8))
-            print(depth_results)
-            print(seq)
-            gathered_depth_metrics.append(depth_results)
-
-
-            # Write to error log after each sequence
-            error_log_path = f'{save_dir}/{seq}/_error_log_depth.txt'  # Unique log file per process
-            with open(error_log_path, 'a') as f:
-                f.write(f'{seq}_{depth_results}\n')
 
 
         os.makedirs(f'{save_dir}/{seq}', exist_ok=True)
@@ -570,85 +531,6 @@ def run_evaluation(args, gpu_num, gpu_no):
         scene.save_conf_maps(f'{save_dir}/{seq}')
         scene.save_init_conf_maps(f'{save_dir}/{seq}')
         scene.save_rgb_imgs(f'{save_dir}/{seq}')
-        if batch.get('gt_traj', None) is not None:
-            if args.dataset != 'sintel' or (args.dataset == 'sintel' and seq in ["alley_2", "ambush_4", "ambush_5", "ambush_6", "cave_2", "cave_4", "market_2", "market_5", "market_6", "shaman_3", "sleeping_1", "sleeping_2", "temple_2", "temple_3"]):
-                os.makedirs(f'{save_dir}/{seq}', exist_ok=True)
-
-                gt_traj = batch['gt_traj']
-                if args.dataset == 'sintel':
-                    gt_traj = [gt_traj[0][0].cpu().numpy(), gt_traj[1][0][:,0].cpu().numpy()-1] # TODO before we have this statement
-                else:
-                    gt_traj = [gt_traj[0][0].cpu().numpy(), gt_traj[1][0].cpu().numpy()]
-
-                
-                try:
-                    if gt_traj is not None:
-                        ate, rpe_trans, rpe_rot = eval_metrics(pred_traj, gt_traj, seq=seq, filename=f'{save_dir}/{seq}_eval_metric.txt', sample_stride=1)
-                        plot_trajectory(pred_traj, gt_traj, title=seq, filename=f'{save_dir}/{seq}.png')
-                    else:
-                        ate, rpe_trans, rpe_rot = 0, 0, 0
-                        outfile = None
-                        bug = True
-                except Exception as e:
-                    print(f'Error: {e}')
-                    ate, rpe_trans, rpe_rot = 0, 0, 0
-                    outfile = None
-                    bug = True
-
-                ate_list.append(ate)
-                rpe_trans_list.append(rpe_trans)
-                rpe_rot_list.append(rpe_rot)
-                outfile_list.append(outfile)
-
-                # Write to error log after each sequence
-                error_log_path = f'{save_dir}/{seq}/_error_log.txt'  # Unique log file per process
-                with open(error_log_path, 'a') as f:
-                    f.write(f'{config.postprocess.eval_dataset}-{seq: <16} | ATE: {ate:.5f}, RPE trans: {rpe_trans:.5f}, RPE rot: {rpe_rot:.5f}\n')
-                    f.write(f'{ate:.5f}\n')
-                    f.write(f'{rpe_trans:.5f}\n')
-                    f.write(f'{rpe_rot:.5f}\n')
-                print(f"ATE: {ate:.5f}, RPE trans: {rpe_trans:.5f}, RPE rot: {rpe_rot:.5f}")
-
-
-    # if batch.get('gt_traj', None) is not None:
-    if batch.get('depth', None) is not None:
-        average_metrics = {
-            key: np.average(
-                [metrics[key] for metrics in gathered_depth_metrics], 
-                weights=[metrics['valid_pixels'] for metrics in gathered_depth_metrics]
-            )
-            for key in gathered_depth_metrics[0].keys() if key != 'valid_pixels'
-        }
-        print('Average depth evaluation metrics:', average_metrics)
-        # write metrics to file
-        with open(f'{save_dir}/_error_log_all.txt', 'a') as f:
-            f.write(f'Average depth evaluation metrics: {average_metrics}\n')
-    
-    ate_list = np.array(ate_list)
-    nonzero_ate = ate_list[np.nonzero(ate_list)].mean()
-    rpe_trans_list = np.array(rpe_trans_list)
-    nonzero_rpe_trans = rpe_trans_list[np.nonzero(rpe_trans_list)].mean()
-    rpe_rot_list = np.array(rpe_rot_list)
-    nonzero_rpe_rot = rpe_rot_list[np.nonzero(rpe_rot_list)].mean()
-    # print
-    print(f'ATE: {nonzero_ate}, rpe_trans: {nonzero_rpe_trans}, rpe_rot: {nonzero_rpe_rot}')
-    # write to file
-    with open(f'{save_dir}/_error_log_all.txt', 'a') as f:
-        f.write(f'ATE: {nonzero_ate}, rpe_trans: {nonzero_rpe_trans}, rpe_rot: {nonzero_rpe_rot}')
-    # import pdb;pdb.set_trace()
-    # output time
-    time_list = np.array(time_list)
-    time_for_each_frames = time_list.sum() / total_frames
-    print('time_list', time_list)
-    print('total_times', time_list.sum())
-    print('time_for_each_frames', time_for_each_frames)
-    with open(f'{save_dir}/time_cost.txt', 'a') as f:
-        f.write(f'total_times: {time_list.sum()}\n')
-        f.write(f'time_for_each_frames: {time_for_each_frames}\n')
-        f.write(f'time_list: {time_list}\n')
-
-
-
 
 
 from utils.rays import cameras_from_plucker
@@ -711,7 +593,10 @@ def get_parser():
     parser.add_argument("--dataset", type=str, default=None, help="Evaluation Dataset")
     parser.add_argument("--full_seq", action='store_true', default=False, help="Evaluation Dataset")
     parser.add_argument("--stride", type=int, default=4, help="Sliding window stride for video")
-
+    parser.add_argument("--video_path", type=str, default="./data/demo/drift-turn.mp4", help="Input video path")
+    parser.add_argument("--max_video_frames", type=int, default=-1, help="Input video max length, -1 means use all frames")
+    parser.add_argument("--frame_sampling_stride", type=int, default=1, help="Input video sampling stride")
+    
     ## currently not support looping video and generative frame interpolation
     parser.add_argument("--loop", action='store_true', default=False, help="generate looping videos or not")
     parser.add_argument("--interp", action='store_true', default=False, help="generate generative frame interpolation or not")
@@ -729,4 +614,4 @@ if __name__ == '__main__':
         seed = random.randint(0, 2 ** 31)
     seed_everything(seed)
     rank, gpu_num = 0, 1
-    run_evaluation(args, gpu_num, rank)
+    run_inference(args, gpu_num, rank)

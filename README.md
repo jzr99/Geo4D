@@ -4,7 +4,7 @@
 <img src='assets/geo4d_title.png' style="height:80px"></img>
 </p>
 
-## [Paper](https://arxiv.org/pdf/xxx.xxxxx) | [Video Youtube](https://youtu.be/HHQG26mZicE) | [Project Page](https://geo4d.github.io) 
+## [Paper](https://arxiv.org/pdf/2504.07961) | [Video Youtube](https://youtu.be/HHQG26mZicE) | [Project Page](https://geo4d.github.io) 
 
 <p align="center">
 <img src="assets/geo4d_method_v2.png" width="800" height="223"/> 
@@ -21,7 +21,6 @@ pip install -r requirements.txt
 Install [Pytorch3D](https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md)
 ```bash
 pip install "git+https://github.com/facebookresearch/pytorch3d.git"
-# recommend build from source
 ```
 Download model checkpoint
 ```bash
@@ -29,6 +28,12 @@ mkdir checkpoints
 mkdir checkpoints/geo4d
 gdown 10SPKkOpou2lKl9bwkgx1d6YocYkmSxQl -O ./checkpoints/geo4d/ # fine-tuned vae model
 gdown 11K0ubqytun-SA5RIOgR7ejNIR8B4uois -O ./checkpoints/geo4d/ # whole model
+```
+
+## Inference
+We provide a demo video for you to try our model. Run the inference script:
+```bash 
+bash ./scripts/infer_geo4d.sh ./data/demo/drift-turn.mp4 0
 ```
 
 ## Evaluation
@@ -43,9 +48,13 @@ bash scripts/eval_geo4d.sh [sintel|bonn|kitti|tum|davis] gpu_id
 
 ## Visualization
 
+First, install 4d visualization tool, `viser`.
+```bash
+pip install -e viser
+```
 You could then use the `viser` to visualize the results:
 ```bash
-python viser/visualizer.py --data path/to/results/folder --no_mask
+python viser/visualizer.py --data path_to_results_folder --no_mask
 ```
 
 <p align="center">
@@ -57,7 +66,7 @@ python viser/visualizer.py --data path/to/results/folder --no_mask
 </p>
 
 ## Acknowledgement
-We have used codes from other great research work, including [DuST3R](https://github.com/naver/dust3r), [MonST3R](https://github.com/Junyi42/monst3r), [DepthCrafter](https://github.com/Tencent/DepthCrafter), [DynamiCrafter](https://github.com/Doubiiu/DynamiCrafter), [RayDiffusion](https://github.com/jasonyzhang/RayDiffusion). We sincerely thank the authors for their awesome work!
+We have used codes from other great research work, including [DuST3R](https://github.com/naver/dust3r), [MonST3R](https://github.com/Junyi42/monst3r), [DepthCrafter](https://github.com/Tencent/DepthCrafter), [DynamiCrafter](https://github.com/Doubiiu/DynamiCrafter), [RayDiffusion](https://github.com/jasonyzhang/RayDiffusion), and [MoGe](https://github.com/microsoft/MoGe). We sincerely thank the authors for their awesome work!
 
 ## Related Works 
 Here are more recent 3D/4D reconstruction projects from our team:
