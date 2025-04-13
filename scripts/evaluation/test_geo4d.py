@@ -373,7 +373,7 @@ def run_inference(args, gpu_num, gpu_no):
 
     seq_name = args.video_path.split('/')[-1].split('.')[0]
 
-    vaedir = os.path.join(args.savedir, f'{seq_name}_fps24_cfg{args.unconditional_guidance_scale}_ddimstep{args.ddim_steps}_ddimeta{args.ddim_eta}')
+    vaedir = os.path.join(args.savedir, f'{seq_name}')
 
     os.makedirs(vaedir, exist_ok=True)
     save_dir = vaedir
@@ -440,7 +440,7 @@ def run_inference(args, gpu_num, gpu_no):
             traj = None
             # batch, variants, c, t, h, w
             batch_samples = image_guided_synthesis(model, prompts, videos, noise_shape, args.n_samples, args.ddim_steps, args.ddim_eta, \
-                                args.unconditional_guidance_scale, args.cfg_img, 24, True, args.multiple_cond_cfg, args.loop, args.interp, args.timestep_spacing, args.guidance_rescale, pointmap_vae=pointmap_vae)
+                                args.unconditional_guidance_scale, args.cfg_img, fps, True, args.multiple_cond_cfg, args.loop, args.interp, args.timestep_spacing, args.guidance_rescale, pointmap_vae=pointmap_vae)
 
             assert batch_samples.shape[1] == 1, "only support variants size = 1"
             batch_samples = batch_samples[:,0]
@@ -478,7 +478,7 @@ def run_inference(args, gpu_num, gpu_no):
             x_recon_reshape = rearrange(x_recon, 't c h w -> t h w c')
             
             
-            invalid_pts = get_sky_mask(x_recon_reshape, sky_value=1.05, eps=0.1)
+            invalid_pts = get_sky_mask(x_recon_reshape, sky_value=1.05, eps=0.35)
             far_away_mask = get_far_away_mask(x_recon_reshape, far_away_value=1.99)
             invalid_pts = invalid_pts | far_away_mask
             confidence[invalid_pts] = 999.0

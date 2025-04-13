@@ -1,11 +1,10 @@
 import os, sys, glob
 import numpy as np
 from collections import OrderedDict
-from decord import VideoReader, cpu
-import cv2
-
 import torch
 import torchvision
+from decord import VideoReader, cpu
+import cv2
 sys.path.insert(1, os.path.join(sys.path[0], '..', '..'))
 from lvdm.models.samplers.ddim import DDIMSampler
 from einops import rearrange
