@@ -296,16 +296,16 @@ def decode_pm_confhead(z, model, pointmap_vae):
     else:
         reshape_back = False
         
-    # if not self.perframe_ae:    
-    z = 1. / model.scale_factor * z
-    results = pointmap_vae.decode_with_conf_adaptor(z)
-    # else:
-    #     results = []
-    #     for index in range(z.shape[0]):
-    #         frame_z = 1. / self.scale_factor * z[index:index+1,:,:,:]
-    #         frame_result = self.first_stage_model.decode_with_conf_adaptor(frame_z, **kwargs)
-    #         results.append(frame_result)
-    #     results = torch.cat(results, dim=0)
+    if not model.perframe_ae:    
+        z = 1. / model.scale_factor * z
+        results = pointmap_vae.decode_with_conf_adaptor(z)
+    else:
+        results = []
+        for index in range(z.shape[0]):
+            frame_z = 1. / model.scale_factor * z[index:index+1,:,:,:]
+            frame_result = pointmap_vae.decode_with_conf_adaptor(frame_z)
+            results.append(frame_result)
+        results = torch.cat(results, dim=0)
 
     if reshape_back:
         results = rearrange(results, '(b t) c h w -> b c t h w', b=b,t=t)
@@ -336,7 +336,7 @@ def run_inference(args, gpu_num, gpu_no):
         pointmap_vae.train = disabled_train
         for param in pointmap_vae.parameters():
             param.requires_grad = False
-        print(f'load vae path:')
+        print(f'load vae path:', config['vae_path'])
         vae_weights = torch.load(config['vae_path'])
         vae_weights = vae_weights['state_dict']
         new_pl_sd = OrderedDict()
@@ -501,6 +501,7 @@ def run_inference(args, gpu_num, gpu_no):
                 pred_pts['traj'] = traj
 
             pred_list.append(pred_pts)
+            # torch.cuda.empty_cache()
         
         
 
