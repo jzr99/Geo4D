@@ -77,12 +77,14 @@ Here are more recent 3D/4D reconstruction projects from our team:
 
 ## BibTeX
 If you find Geo4D useful for your research and applications, please cite us using this BibTex:
-```
-@misc{Geo4D,
+```bibtex
+@misc{jiang2025geo4d,
       title={Geo4D: Leveraging Video Generators for Geometric 4D Scene Reconstruction}, 
-      author={Jiang, Zeren and Zheng, Chuanxia and Laina, Iro and Larlus, Diane and Vedaldi, Andrea},
+      author={Zeren Jiang and Chuanxia Zheng and Iro Laina and Diane Larlus and Andrea Vedaldi},
       year={2025},
+      eprint={2504.07961},
       archivePrefix={arXiv},
-      primaryClass={cs.CV}
-  }
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2504.07961}, 
+}
 ```
